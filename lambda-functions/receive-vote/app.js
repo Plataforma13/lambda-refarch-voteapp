@@ -3,36 +3,33 @@ var AWS = require('aws-sdk');
 var dynamodb = new AWS.DynamoDB();
 
 exports.handler = function(event, context) {
-  var twilio = require('twilio');
-  var dynamodb = new AWS.DynamoDB({apiVersion: '2012-08-10', region: 'us-east-1'});
+    
+  AWS.config.update({
+    region: "us-east-1"
+  });
+  var docClient = new AWS.DynamoDB.DocumentClient();
 
-  /* Make sure we have a valid vote (one of [RED, GREEN, BLUE]) */
   console.log(event);
-  var votedFor = event['Body'].toUpperCase().trim();
-  if (['RED', 'GREEN', 'BLUE'].indexOf(votedFor) >= 0) {
-    /* Add randomness to our value to help spread across partitions */
-    votedForHash = votedFor + "." + Math.floor((Math.random() * 10) + 1).toString();
-    /* ...updateItem into our DynamoDB database */
-    var tableName = 'VoteApp';
-    dynamodb.updateItem({
+  var votedForName = event.name;
+  var votedForEmail = event.email;
+  var timestamp = new Date();
+
+  var tableName = 'PartiuByYouVoteApp';
+  docClient.put({
       'TableName': tableName,
-      'Key': { 'VotedFor' : { 'S': votedForHash }},
-      'UpdateExpression': 'add #vote :x',
-      'ExpressionAttributeNames': {'#vote' : 'Votes'},
-      'ExpressionAttributeValues': { ':x' : { "N" : "1" } }
+      'Item': {
+        "Name": votedForName,
+        "CreatedAt": timestamp.toISOString(),
+        "Email": votedForEmail
+      }
     }, function(err, data) {
       if (err) {
         console.log(err);
         context.fail(err);
       } else {
-        var resp = new twilio.TwimlResponse();
-        resp.message("Thank you for casting a vote for " + votedFor);
-        context.done(null, [resp.toString()]);
-        console.log("Vote received for %s", votedFor);
+        context.done(null, {success:true});
+        console.log("Voto recebido para %s", votedForName);
       }
     });
-  } else {
-    console.log("Invalid vote received (%s)", votedFor);
-    context.fail("Invalid vote received");
-  }
+
 }

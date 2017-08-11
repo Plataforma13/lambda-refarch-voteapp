@@ -10,13 +10,13 @@
         "Type": "String",
         "MinLength": "3",
         "MaxLength": "63",
-        "Default": "myvoteappbucket"
+        "Default": "partiubyyouvoteapp"
     },
 
     "LambdaS3Bucket" : {
         "Description" : "Name of S3 bucket where static site and Lambda function packages are stored.",
         "Type" : "String",
-        "Default" : "awslambda-reference-architectures"
+        "Default" : "partiubyyouvoteapp-awslambda-reference-architectures"
     },
 
     "LambdaReceiveS3Key" : {
@@ -41,7 +41,7 @@
     },
 
     "VotesTableWrite": {
-        "Description": "Write capacity units for VoteApp DynamoDB table",
+        "Description": "Write capacity units for PartiuByYouVoteApp DynamoDB table",
         "Type": "String",
         "MinLength": "1",
         "MaxLength": "4",
@@ -50,7 +50,7 @@
     },
 
     "AggregatesTableRead": {
-        "Description": "Read capacity units for VoteAppAggregates aggregates table",
+        "Description": "Read capacity units for PartiuByYouVoteAppAggregates aggregates table",
         "Type": "String",
         "MinLength": "1",
         "MaxLength": "4",
@@ -59,7 +59,7 @@
     },
 
     "AggregatesTableWrite": {
-        "Description": "Write capacity units for VoteAppAggregates aggregates table",
+        "Description": "Write capacity units for PartiuByYouVoteAppAggregates aggregates table",
         "Type": "String",
         "MinLength": "1",
         "MaxLength": "4",
@@ -75,14 +75,22 @@
         "Properties": {
           "AttributeDefinitions": [
             {
-              "AttributeName": "VotedFor",
+              "AttributeName": "Name",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "CreatedAt",
               "AttributeType": "S"
             }
           ],
           "KeySchema": [
             {
-              "AttributeName": "VotedFor",
+              "AttributeName": "Name",
               "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "CreatedAt",
+              "KeyType": "RANGE"
             }
           ],
           "ProvisionedThroughput": {
@@ -93,7 +101,7 @@
               "Ref": "VotesTableWrite"
             }
           },
-          "TableName": "VoteApp"
+          "TableName": "PartiuByYouVoteApp"
         }
     },
 
@@ -102,13 +110,13 @@
         "Properties": {
           "AttributeDefinitions": [
             {
-              "AttributeName": "VotedFor",
+              "AttributeName": "Name",
               "AttributeType": "S"
             }
           ],
           "KeySchema": [
             {
-              "AttributeName": "VotedFor",
+              "AttributeName": "Name",
               "KeyType": "HASH"
             }
           ],
@@ -120,7 +128,7 @@
               "Ref": "AggregatesTableWrite"
             }
           },
-          "TableName": "VoteAppAggregates"
+          "TableName": "PartiuByYouVoteAppAggregates"
         }
     },
 
@@ -162,7 +170,7 @@
         }
     },
 
-    "LambdaVoteFunction": {
+    "PartiuByYouLambdaVoteFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
@@ -173,8 +181,8 @@
               "Ref": "LambdaReceiveS3Key"
           }
         },
-        "Runtime": "nodejs",
-        "Description": "Receives votes from Twilio and adds to DynamoDB",
+        "Runtime": "nodejs6.10",
+        "Description": "Receives votes from byyou homepage and adds to DynamoDB",
         "Handler": "app.handler",
         "Role": {
           "Fn::GetAtt": [
@@ -186,7 +194,7 @@
       }
     },
 
-    "LambdaAggregateFunction": {
+    "PartiuByYouLambdaAggregateFunction": {
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Code": {
@@ -197,7 +205,7 @@
             "Ref": "LambdaAggregateS3Key"
           }
         },
-        "Runtime": "nodejs",
+        "Runtime": "nodejs6.10",
         "Description": "Receives updated items from DynamoDB streams for aggregation",
         "Handler": "app.handler",
         "Role": {
@@ -227,7 +235,7 @@
         },
         "Policies": [
           {
-            "PolicyName": "lambda_exec_role_voteapp",
+            "PolicyName": "lambda_exec_role_partiubyyouvoteapp",
             "PolicyDocument": {
               "Version": "2012-10-17",
               "Statement": [
@@ -248,7 +256,11 @@
                     "dynamodb:GetItem",
                     "dynamodb:PutItem",
                     "dynamodb:Query",
-                    "dynamodb:UpdateItem"
+                    "dynamodb:UpdateItem",
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator",
+                    "dynamodb:DescribeStream",
+                    "dynamodb:ListStreams"
                   ],
                   "Resource": "*"
                 }
